@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "xat:weightless_stone",
+    "xat:inertia_null_stone",
+    "xat:greater_inertia_stone",
+    "xat:polarized_stone",
+    "xat:poison_stone",
+    "xat:teddy_bear",
+    "xat:cosmetic"
+  ]
+}
