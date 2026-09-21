@@ -8,7 +8,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
 import xzeroair.trinkets.capabilities.magic.MagicStats;
 import xzeroair.trinkets.capabilities.race.EntityProperties;
 import xzeroair.trinkets.network.PlayerDataSync;
@@ -74,6 +73,14 @@ public class CapabilityEventHandler {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // ForgeCaps 已在登录事件前从玩家 NBT 恢复。此时 heightValue/widthValue 往往已经
+            // 等于种族目标值，下一 tick 的 updateSize() 会直接 return，因而服务端仍可能保留
+            // 原版玩家包围盒。客户端随后同步成缩放体型后，两端碰撞箱不一致就会表现为卡住。
+            // 登录完成时主动刷新一次，让 EntityEvent.Size 立即按已恢复的种族数据重算服务端尺寸。
+            final EntityProperties properties = EntityProperties.get(player);
+            if (properties != null) {
+                player.refreshDimensions();
+            }
             PlayerDataSync.sync(player);
         }
     }
@@ -87,7 +94,7 @@ public class CapabilityEventHandler {
 
     /**
      * 死亡/进入末地返回时，新玩家实体需继承旧实例的数据。
-     *
+     * <p>
      * 移植说明（1.20.1 关键坑）：旧玩家实体的 capability 在此刻已被 invalidate，
      * 必须先 reviveCaps() 才读得到，读完再 invalidateCaps() 复原——1.12 无此要求，
      * 直接读旧实例即可。漏掉 revive 会静默拿到空数据，表现为「死亡后种族/能力/魔力清零」。
